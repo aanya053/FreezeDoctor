@@ -42,7 +42,7 @@ No priorities are changed. Regardless of natural fluctuations, it cannot claim r
 
 | Observation | Explanation / next action |
 | --- | --- |
-| `gcc` or `make` missing | Install `build-essential` on Debian/Ubuntu. |
+| `g++` or `make` missing | Install `build-essential` on Debian/Ubuntu. |
 | Affinity error | Use the default CPU or select one from `/proc/self/status`'s `Cpus_allowed_list`. |
 | Cannot open report path | Create its parent directory and check write access. |
 | No detection | Increase `--seconds` to 10 or use more workers, and check unrelated host load. Keep unsuccessful measurements. |
@@ -68,4 +68,4 @@ No priorities are changed. Regardless of natural fluctuations, it cannot claim r
 
 **What are the latency units?** Milliseconds, from scheduled release to completion. The job uses approximately 2 ms of actual process CPU time; elapsed response can be much higher under contention.
 
-**Why no `exec()`?** `fork()` directly launches small C worker routines, avoiding an external executable dependency. It still demonstrates genuine process creation/control; the synopsis allows mechanisms such as fork/exec rather than requiring a particular process launch pairing.
+**Why no `exec()`?** `fork()` directly launches small C++ worker routines, avoiding an external executable dependency. It still demonstrates genuine process creation/control; the synopsis allows mechanisms such as fork/exec rather than requiring a particular process launch pairing.

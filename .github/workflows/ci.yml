@@ -1,9 +1,9 @@
-name: Linux build and integration tests
+name: C++ Linux build and integration tests
 on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build with strict warnings and run real-process tests
+      - name: Build C++17 with strict warnings and run real-process tests
         run: make test

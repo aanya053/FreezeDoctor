@@ -2,7 +2,7 @@
 
 **Detect CPU scheduling delay. Identify contention. Apply a priority adjustment. Measure recovery.**
 
-A working Linux Operating Systems project based on the supplied *FreezeDoctor OS-Based Detection and Recovery of Process Scheduling Starvation in Linux* synopsis. It uses real processes and Linux APIs, not simulated metrics. No root access or third-party libraries are needed.
+A working **C++17** Linux Operating Systems project based on the supplied *FreezeDoctor OS-Based Detection and Recovery of Process Scheduling Starvation in Linux* synopsis. It uses real processes and Linux APIs, not simulated metrics. No root access or third-party libraries are needed.
 
 ```text
 Latency probe + CPU workers (one allowed CPU)
@@ -18,7 +18,7 @@ Same response measurement → before/after verification
 
 ## Run the working model
 
-On Linux (including WSL2 or a Linux VM), install GCC, Make, and Python 3 for tests. On Debian/Ubuntu:
+On Linux (including WSL2 or a Linux VM), install G++, Make, and Python 3 for tests. On Debian/Ubuntu:
 
 ```bash
 sudo apt-get update
@@ -39,6 +39,17 @@ make test                         # real-process integration tests
 ```
 
 `--seconds` is the duration of **each** of three phases (2–60 seconds); `--workers` accepts 1–16. `--cpu N` selects a CPU from the current affinity mask. Defaults select the first permitted CPU. `--report PATH` and `--csv PATH` choose output files; their parent directories must exist. Outputs overwrite existing files at those paths. Press Ctrl+C to stop and reap the experiment's children.
+
+## C++ lab implementation
+
+The program is in `src/freezedoctor.cpp` and compiles with `g++ -std=c++17`. It uses `std::array` for fixed process/sample storage, `std::vector` and `std::sort` for statistics, C++ file/string streams for `/proc` parsing, `std::atomic` for publishing probe samples, and `std::unique_ptr` with a custom deleter for shared-memory cleanup. Linux scheduling and process functions such as `fork()`, `setpriority()`, and `sched_setaffinity()` are called directly from C++.
+
+To compile directly for your lab:
+
+```bash
+g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic src/freezedoctor.cpp -o freezedoctor
+./freezedoctor
+```
 
 ## What it demonstrates
 
@@ -70,4 +81,4 @@ Exit codes: `0` means the experiment completed, **not necessarily verified recov
 
 ## Requirements and portability
 
-Linux with `/proc`, `sched_setaffinity`, POSIX clocks, and lock-free shared integer atomics; GCC with C11 support; Make. Python 3 is needed only for tests. Native macOS/Windows are unsupported; use Linux/WSL2. Kernel policies, containers, CPU quotas, existing load, inherited nice values, and scheduler configuration can limit reproducibility. The tool reports the measured outcome even if recovery does not improve latency.
+Linux with `/proc`, `sched_setaffinity`, POSIX clocks, and lock-free shared integer atomics; G++ with C++17 support; Make. Python 3 is needed only for tests. Native macOS/Windows are unsupported; use Linux/WSL2. Kernel policies, containers, CPU quotas, existing load, inherited nice values, and scheduler configuration can limit reproducibility. The tool reports the measured outcome even if recovery does not improve latency.

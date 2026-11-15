@@ -11,9 +11,15 @@ The supplied synopsis is treated as a project specification. Its numerical examp
 | Verification | `stats()` computes mean, nearest-rank p95, maximum, and sample count using identical metrics | Quantitative before/after experiment |
 | Reporting | Live terminal output, sample CSV, structured JSON | Auditable experimental evidence |
 
+## C++ implementation
+
+The source is `src/freezedoctor.cpp`, built as C++17 with G++. `Measurement`, `Shared`, `Stats`, `Proc`, and `Phase` are C++ structures with initialized members. Fixed-capacity collections use `std::array`; latency summaries use `std::vector` and `std::sort`. `std::ifstream` and `std::istringstream` parse Linux process files. A `std::unique_ptr` owns the placement-constructed shared-memory object and reaps children before destroying/unmapping it. This gives the C++ atomic and array explicit object lifetimes inside the Linux mapping. The lock-free counter is checked at compile time.
+
+Linux process and scheduling APIs are available from C++; using their POSIX headers does not require C source or a C compiler. The experiment retains the same scheduling measurements and recovery criteria.
+
 ## Data and execution
 
-The probe writes measurements to a fixed-size `MAP_SHARED` anonymous mapping. It publishes each complete sample using a release store on a lock-free C11 atomic counter; the parent uses acquire loads. This is a single-writer append-only buffer. At most 18,000 periodic releases occur in a 3 × 60-second run, below the 131,072-sample capacity. No sample is read before publication.
+The probe writes measurements to a fixed-size `MAP_SHARED` anonymous mapping. It publishes each complete sample using a release store on a lock-free C++17 `std::atomic<unsigned>` counter; the parent uses acquire loads. This is a single-writer append-only buffer. At most 18,000 periodic releases occur in a 3 × 60-second run, below the 131,072-sample capacity. No sample is read before publication.
 
 Probe and workers share one CPU selected from `sched_getaffinity()`. This deliberately creates contention even on a multi-core machine. The controller is not pinned; it may still execute on the test CPU if the scheduler chooses. CPU tick deltas divided by actual elapsed monotonic time give utilization as a percentage of one logical CPU. Small accounting errors are expected from tick granularity.
 

@@ -2,41 +2,41 @@ FreezeDoctor | real Linux scheduling experiment
 CPU 0 | 4 workers | probe: 2 ms CPU service every 10 ms
 
 [baseline] 4.0 seconds
-  samples=49  response=  2.149 ms  p95=  2.278 ms  workload CPU=  0.0%
-  samples=50  response=  2.104 ms  p95=  2.207 ms  workload CPU=  0.0%
-  samples=50  response=  2.129 ms  p95=  2.266 ms  workload CPU=  0.0%
-  samples=50  response=  2.117 ms  p95=  2.236 ms  workload CPU=  0.0%
-  samples=50  response=  2.190 ms  p95=  3.225 ms  workload CPU=  0.0%
-  samples=50  response=  2.133 ms  p95=  2.176 ms  workload CPU=  0.0%
-  samples=50  response=  2.111 ms  p95=  2.244 ms  workload CPU=  0.0%
-  samples=50  response=  2.097 ms  p95=  2.161 ms  workload CPU=  0.0%
+  samples=49  response=  2.317 ms  p95=  2.982 ms  workload CPU=  0.0%
+  samples=50  response=  2.608 ms  p95=  4.096 ms  workload CPU=  0.0%
+  samples=50  response=  2.746 ms  p95=  4.818 ms  workload CPU=  0.0%
+  samples=50  response=  2.696 ms  p95=  4.745 ms  workload CPU=  0.0%
+  samples=50  response=  2.641 ms  p95=  4.104 ms  workload CPU=  0.0%
+  samples=50  response=  2.896 ms  p95=  5.110 ms  workload CPU=  0.0%
+  samples=49  response=  3.389 ms  p95=  7.921 ms  workload CPU=  0.0%
+  samples=50  response=  2.303 ms  p95=  3.756 ms  workload CPU=  0.0%
 
 [contention] 4.0 seconds
-  samples=29  response= 10.684 ms  p95= 18.428 ms  workload CPU= 84.0% DELAY + CONTENTION
-  samples=32  response= 10.242 ms  p95= 17.951 ms  workload CPU= 86.0% DELAY + CONTENTION
-  samples=32  response= 10.146 ms  p95= 18.033 ms  workload CPU= 86.0% DELAY + CONTENTION
-  samples=33  response= 10.112 ms  p95= 13.980 ms  workload CPU= 88.0% DELAY + CONTENTION
-  samples=31  response= 10.020 ms  p95= 14.000 ms  workload CPU= 88.0% DELAY + CONTENTION
-  samples=32  response= 10.108 ms  p95= 13.984 ms  workload CPU= 88.0% DELAY + CONTENTION
-  samples=32  response= 10.536 ms  p95= 14.523 ms  workload CPU= 86.0% DELAY + CONTENTION
-  samples=32  response=  9.975 ms  p95= 17.984 ms  workload CPU= 88.0% DELAY + CONTENTION
+  samples=31  response= 10.375 ms  p95= 17.928 ms  workload CPU= 80.0% DELAY + CONTENTION
+  samples=29  response= 10.207 ms  p95= 14.108 ms  workload CPU= 88.0% DELAY + CONTENTION
+  samples=34  response= 10.339 ms  p95= 17.975 ms  workload CPU= 88.0% DELAY + CONTENTION
+  samples=29  response= 11.216 ms  p95= 21.516 ms  workload CPU= 86.0% DELAY + CONTENTION
+  samples=27  response= 11.872 ms  p95= 25.628 ms  workload CPU= 88.0% DELAY + CONTENTION
+  samples=26  response= 12.581 ms  p95= 28.160 ms  workload CPU= 84.0% DELAY + CONTENTION
+  samples=30  response= 10.568 ms  p95= 21.433 ms  workload CPU= 90.0% DELAY + CONTENTION
+  samples=30  response= 10.349 ms  p95= 14.144 ms  workload CPU= 86.0% DELAY + CONTENTION
 
-DETECTED: 8 consecutive abnormal windows; contributor PID 921, 22.0% CPU
-Recovery: PID 921 nice 0 -> 19
-Recovery: PID 922 nice 0 -> 19
-Recovery: PID 923 nice 0 -> 19
-Recovery: PID 924 nice 0 -> 19
+DETECTED: 8 consecutive abnormal windows; contributor PID 1337, 22.0% CPU
+Recovery: PID 1337 nice 0 -> 19
+Recovery: PID 1338 nice 0 -> 19
+Recovery: PID 1339 nice 0 -> 19
+Recovery: PID 1340 nice 0 -> 19
 
 [verification] 4.0 seconds
-  samples=51  response=  2.830 ms  p95=  5.390 ms  workload CPU= 78.0%
-  samples=50  response=  2.206 ms  p95=  2.270 ms  workload CPU= 80.0%
-  samples=50  response=  2.384 ms  p95=  5.347 ms  workload CPU= 80.0%
-  samples=50  response=  2.269 ms  p95=  5.331 ms  workload CPU= 78.0%
-  samples=50  response=  2.269 ms  p95=  5.333 ms  workload CPU= 80.0%
-  samples=50  response=  2.264 ms  p95=  5.329 ms  workload CPU= 80.0%
-  samples=50  response=  2.366 ms  p95=  5.364 ms  workload CPU= 80.0%
-  samples=50  response=  2.205 ms  p95=  2.261 ms  workload CPU= 78.0%
+  samples=50  response=  2.500 ms  p95=  5.270 ms  workload CPU= 78.0%
+  samples=50  response=  2.492 ms  p95=  5.292 ms  workload CPU= 78.0%
+  samples=50  response=  2.280 ms  p95=  5.266 ms  workload CPU= 80.0%
+  samples=50  response=  2.288 ms  p95=  5.268 ms  workload CPU= 80.0%
+  samples=50  response=  2.211 ms  p95=  2.441 ms  workload CPU= 80.0%
+  samples=48  response=  3.765 ms  p95=  8.939 ms  workload CPU= 78.0%
+  samples=50  response=  3.238 ms  p95=  5.993 ms  workload CPU= 80.0%
+  samples=50  response=  3.172 ms  p95=  6.077 ms  workload CPU= 77.9%
 
 RECOVERY VERIFIED
-Before 10.223 ms -> after 2.350 ms (77.0% mean improvement)
+Before 10.888 ms -> after 2.738 ms (74.9% mean improvement)
 Reports: docs/example-report.json, docs/example-samples.csv

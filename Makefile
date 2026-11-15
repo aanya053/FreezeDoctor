@@ -1,11 +1,10 @@
-CC = gcc
-CFLAGS = -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror
-LDLIBS = -lm
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror
 .PHONY: all demo test clean
 all: build/freezedoctor
-build/freezedoctor: src/freezedoctor.c
+build/freezedoctor: src/freezedoctor.cpp
 	mkdir -p build
-	$(CC) $(CFLAGS) $< -o $@ $(LDLIBS)
+	$(CXX) $(CXXFLAGS) $< -o $@
 demo: all
 	mkdir -p results
 	./build/freezedoctor --report results/report.json --csv results/samples.csv
