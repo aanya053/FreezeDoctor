@@ -1,0 +1,2 @@
+# Explicitly identify the OS lab implementation for GitHub Linguist.
+*.cpp linguist-language=C++
