@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "cpu": 0,
+  "workers": 4,
+  "probe_pid": 11540,
+  "contributor_pid": 11543,
+  "contributor_cpu_percent": 16.273,
+  "threshold_ms": 5.192537,
+  "persistent_windows": 8,
+  "contention_detected": true,
+  "priority_adjustment_applied": true,
+  "adjusted_workers": 4,
+  "recovery_verified": true,
+  "interrupted": false,
+  "improvement_percent": 27.685,
+  "probe_scheduler_wait_ns": 5321124561,
+  "intervention_monotonic_ns": 16642512667412,
+  "workload_evidence": [
+    {"pid": 11542, "state_before": "R", "nice_before": 0, "nice_after": 19, "cpu_ticks_before": 52, "cpu_ticks_after": 106},
+    {"pid": 11543, "state_before": "R", "nice_before": 0, "nice_after": 19, "cpu_ticks_before": 53, "cpu_ticks_after": 107},
+    {"pid": 11544, "state_before": "R", "nice_before": 0, "nice_after": 19, "cpu_ticks_before": 52, "cpu_ticks_after": 107},
+    {"pid": 11545, "state_before": "R", "nice_before": 0, "nice_after": 19, "cpu_ticks_before": 52, "cpu_ticks_after": 107}
+  ],
+  "baseline": {"samples": 381, "mean_ms": 3.461691, "p95_ms": 7.541475, "max_ms": 17.034609},
+  "before": {"samples": 82, "mean_ms": 40.248866, "p95_ms": 63.005661, "max_ms": 81.959825},
+  "after": {"samples": 104, "mean_ms": 29.106115, "p95_ms": 48.505980, "max_ms": 76.317492}
+}
