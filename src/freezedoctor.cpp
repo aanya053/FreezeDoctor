@@ -305,198 +305,398 @@ static void usage(const char *exe) {
 }
 int main(int argc, char **argv) {
     double seconds = 4;
-    int count = 4, cpu = -1;
+    int count = 4;
+    int cpu = -1;
     bool recover = true;
-    const char *report = "report.json", *csv_path = "samples.csv";
+
+    const char *report = "report.json";
+    const char *csv_path = "samples.csv";
+
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--help")) {
             usage(argv[0]);
             return 0;
         }
+
         if (!strcmp(argv[i], "--no-recovery")) {
             recover = false;
             continue;
         }
+
         if (i + 1 >= argc) {
             usage(argv[0]);
             return 2;
         }
-        const char *key = argv[i], *value = argv[++i];
-        char *tail;
-        if (!strcmp(key, "--report"))
+
+        const char *key = argv[i];
+        const char *value = argv[++i];
+        char *tail = nullptr;
+
+        if (!strcmp(key, "--report")) {
             report = value;
-        else if (!strcmp(key, "--csv"))
+        } else if (!strcmp(key, "--csv")) {
             csv_path = value;
-        else if (!strcmp(key, "--seconds")) {
+        } else if (!strcmp(key, "--seconds")) {
+            errno = 0;
             seconds = strtod(value, &tail);
-            if (*tail || !std::isfinite(seconds) || seconds < 2 || seconds > 60)
+
+            if (tail == value || *tail || errno == ERANGE ||
+                !isfinite(seconds) || seconds < 2 || seconds > 60) {
+                fprintf(stderr, "Seconds must be between 2 and 60.\n");
                 return 2;
+            }
         } else if (!strcmp(key, "--workers")) {
-            long v = strtol(value, &tail, 10);
-            if (*tail || v < 1 || v > MAX_WORKERS)
+            errno = 0;
+            long number = strtol(value, &tail, 10);
+
+            if (tail == value || *tail || errno == ERANGE ||
+                number < 1 || number > MAX_WORKERS) {
+                fprintf(
+                    stderr,
+                    "Workers must be between 1 and %d.\n",
+                    MAX_WORKERS
+                );
                 return 2;
-            count = (int)v;
+            }
+
+            count = static_cast<int>(number);
         } else if (!strcmp(key, "--cpu")) {
-            long v = strtol(value, &tail, 10);
-            if (*tail || v < 0 || v >= CPU_SETSIZE)
+            errno = 0;
+            long number = strtol(value, &tail, 10);
+
+            if (tail == value || *tail || errno == ERANGE ||
+                number < 0 || number >= CPU_SETSIZE) {
+                fprintf(stderr, "Invalid CPU number.\n");
                 return 2;
-            cpu = (int)v;
+            }
+
+            cpu = static_cast<int>(number);
         } else {
             usage(argv[0]);
             return 2;
         }
     }
+
     if (!strcmp(report, csv_path)) {
-        fprintf(stderr, "Report and CSV paths must differ\n");
+        fprintf(stderr, "Report and CSV paths must differ.\n");
         return 2;
     }
+
     cpu_set_t allowed;
+
     if (sched_getaffinity(0, sizeof(allowed), &allowed)) {
         perror("sched_getaffinity");
         return 1;
     }
-    if (cpu < 0)
-        for (int i = 0; i < CPU_SETSIZE; i++)
+
+    if (cpu < 0) {
+        for (int i = 0; i < CPU_SETSIZE; i++) {
             if (CPU_ISSET(i, &allowed)) {
                 cpu = i;
                 break;
             }
+        }
+    }
+
     if (cpu < 0 || !CPU_ISSET(cpu, &allowed)) {
-        fprintf(stderr, "CPU is outside permitted affinity\n");
+        fprintf(stderr, "CPU is outside permitted affinity.\n");
         return 2;
     }
+
     csv = fopen(csv_path, "w");
+
     if (!csv) {
         perror(csv_path);
         return 1;
     }
+
     FILE *out = fopen(report, "w");
+
     if (!out) {
         perror(report);
         fclose(csv);
         return 1;
     }
-    void *mapping =
-        mmap(nullptr, sizeof(Shared), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
+    void *mapping = mmap(
+        nullptr,
+        sizeof(Shared),
+        PROT_READ | PROT_WRITE,
+        MAP_SHARED | MAP_ANONYMOUS,
+        -1,
+        0
+    );
+
     if (mapping == MAP_FAILED) {
         perror("mmap");
+        fclose(csv);
+        fclose(out);
         return 1;
     }
-    // Placement construction starts the C++ atomic/array lifetimes in shared memory.
+
     const auto release_shared = [](Shared *buffer) {
-        cleanup(); // Reap children before destroying storage they may still access.
+        cleanup();
         buffer->~Shared();
         munmap(buffer, sizeof(Shared));
     };
-    std::unique_ptr<Shared, decltype(release_shared)> shared_owner(new (mapping) Shared{},
-                                                                   release_shared);
+
+    unique_ptr<Shared, decltype(release_shared)> shared_owner(
+        new (mapping) Shared{},
+        release_shared
+    );
+
     shared = shared_owner.get();
+
     atexit(cleanup);
+
     struct sigaction sa{};
     sa.sa_handler = on_signal;
     sigemptyset(&sa.sa_mask);
+
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
+
     setvbuf(stdout, nullptr, _IOLBF, 0);
-    fprintf(csv, "phase,sample,response_ms,wake_delay_ms,workload_cpu_percent\n");
-    printf("FreezeDoctor | real Linux scheduling experiment\nCPU %d | %d workers | probe: 2 ms CPU "
-           "service every 10 ms\n",
-           cpu, count);
+
+    fprintf(
+        csv,
+        "phase,sample,response_ms,wake_delay_ms,workload_cpu_percent\n"
+    );
+
+    printf(
+        "FreezeDoctor | real Linux scheduling experiment\n"
+        "CPU %d | %d workers | probe: 2 ms CPU service every 10 ms\n",
+        cpu,
+        count
+    );
+
     pid_t probe = spawn(cpu, true);
-    std::array<pid_t, MAX_WORKERS> workers{};
-    Phase baseline = phase("baseline", seconds, nullptr, 0, 0, false);
-    double threshold = std::max(baseline.stats.mean * 1.5, baseline.stats.mean + 1.0);
+    array<pid_t, MAX_WORKERS> workers{};
+
+    Phase baseline = phase(
+        "baseline", seconds, nullptr, 0, 0, false
+    );
+
+    double threshold = max(
+        baseline.stats.mean * 1.5,
+        baseline.stats.mean + 1.0
+    );
+
     if (interrupted) {
         fclose(csv);
         fclose(out);
         return 130;
     }
-    for (int i = 0; i < count; i++)
+
+    for (int i = 0; i < count; i++) {
         workers[i] = spawn(cpu, false);
-    Phase before = phase("contention", seconds, workers.data(), count, threshold, true);
+    }
+
+    Phase before = phase(
+        "contention",
+        seconds,
+        workers.data(),
+        count,
+        threshold,
+        true
+    );
+
     bool applied = false;
-    std::array<int, MAX_WORKERS> original_nice{};
     int adjusted = 0;
-    std::array<Proc, MAX_WORKERS> worker_before{}, worker_after{};
-    for (int i = 0; i < count; i++)
+    int64_t intervention_ns = 0;
+
+    array<int, MAX_WORKERS> original_nice{};
+    array<Proc, MAX_WORKERS> worker_before{};
+    array<Proc, MAX_WORKERS> worker_after{};
+
+    for (int i = 0; i < count; i++) {
         worker_before[i] = observe(workers[i]);
-    std::int64_t intervention_ns = 0;
+    }
+
     if (!interrupted && detected && recover) {
         intervention_ns = now_ns(CLOCK_MONOTONIC);
-        printf("\nDETECTED: %d consecutive abnormal windows; contributor PID %d, %.1f%% CPU\n",
-               max_streak, contributor, contributor_cpu);
-        /* Every worker is an owned contributor in this controlled experiment. */
+
+        printf(
+            "\nDETECTED: %d consecutive abnormal windows; "
+            "contributor PID %d, %.1f%% CPU\n",
+            max_streak,
+            contributor,
+            contributor_cpu
+        );
+
         for (int i = 0; i < count; i++) {
             errno = 0;
-            original_nice[i] = getpriority(PRIO_PROCESS, workers[i]);
+            original_nice[i] = getpriority(
+                PRIO_PROCESS, workers[i]
+            );
+
             if (errno) {
                 perror("getpriority");
                 continue;
             }
+
             if (setpriority(PRIO_PROCESS, workers[i], 19)) {
                 perror("setpriority");
                 continue;
             }
+
             errno = 0;
             int actual = getpriority(PRIO_PROCESS, workers[i]);
+
             if (!errno && actual == 19 && original_nice[i] < 19) {
                 adjusted++;
-                printf("Recovery: PID %d nice %d -> %d\n", workers[i], original_nice[i], actual);
+
+                printf(
+                    "Recovery: PID %d nice %d -> %d\n",
+                    workers[i],
+                    original_nice[i],
+                    actual
+                );
             }
         }
+
         applied = adjusted == count;
     }
+
     Phase after{};
-    if (!interrupted)
-        after = phase("verification", seconds, workers.data(), count, threshold, false);
-    bool verified = !interrupted && baseline.stats.n >= 10 && detected && applied &&
-                    before.stats.n >= 10 && after.stats.n >= 10 &&
-                    after.stats.mean < before.stats.mean * .9 && after.stats.p95 < before.stats.p95;
-    double improvement = before.stats.mean > 0
-                             ? (before.stats.mean - after.stats.mean) * 100 / before.stats.mean
-                             : 0;
+
+    if (!interrupted) {
+        after = phase(
+            "verification",
+            seconds,
+            workers.data(),
+            count,
+            threshold,
+            false
+        );
+    }
+
+    bool verified =
+        !interrupted &&
+        baseline.stats.n >= 10 &&
+        detected &&
+        applied &&
+        before.stats.n >= 10 &&
+        after.stats.n >= 10 &&
+        after.stats.mean < before.stats.mean * 0.9 &&
+        after.stats.p95 < before.stats.p95;
+
+    double improvement = 0;
+
+    if (before.stats.mean > 0) {
+        improvement =
+            (before.stats.mean - after.stats.mean) * 100.0 /
+            before.stats.mean;
+    }
+
     Proc probe_info = observe(probe);
-    for (int i = 0; i < count; i++)
+
+    for (int i = 0; i < count; i++) {
         worker_after[i] = observe(workers[i]);
-    fprintf(out,
-            "{\n  \"schema_version\": 1,\n  \"cpu\": %d,\n  \"workers\": %d,\n  \"probe_pid\": "
-            "%d,\n  \"contributor_pid\": %d,\n  \"contributor_cpu_percent\": %.3f,\n  "
-            "\"threshold_ms\": %.6f,\n  \"persistent_windows\": %d,\n  \"contention_detected\": "
-            "%s,\n  \"priority_adjustment_applied\": %s,\n  \"adjusted_workers\": %d,\n  "
-            "\"recovery_verified\": %s,\n  \"interrupted\": %s,\n  \"improvement_percent\": "
-            "%.3f,\n  \"probe_scheduler_wait_ns\": %llu,\n",
-            cpu, count, probe, contributor, contributor_cpu, threshold, max_streak,
-            detected ? "true" : "false", applied ? "true" : "false", adjusted,
-            verified ? "true" : "false", interrupted ? "true" : "false", improvement,
-            probe_info.wait_ns);
-    fprintf(out, "  \"intervention_monotonic_ns\": %lld,\n  \"workload_evidence\": [\n",
-            static_cast<long long>(intervention_ns));
-    for (int i = 0; i < count; i++)
-        fprintf(out,
-                "    {\"pid\": %d, \"state_before\": \"%c\", \"nice_before\": %d, \"nice_after\": "
-                "%d, \"cpu_ticks_before\": %llu, \"cpu_ticks_after\": %llu}%s\n",
-                workers[i], worker_before[i].state ? worker_before[i].state : '?',
-                worker_before[i].nice, worker_after[i].nice, worker_before[i].ticks,
-                worker_after[i].ticks, i + 1 < count ? "," : "");
+    }
+
+    fprintf(
+        out,
+        "{\n"
+        "  \"schema_version\": 1,\n"
+        "  \"cpu\": %d,\n"
+        "  \"workers\": %d,\n"
+        "  \"probe_pid\": %d,\n"
+        "  \"contributor_pid\": %d,\n"
+        "  \"contributor_cpu_percent\": %.3f,\n"
+        "  \"threshold_ms\": %.6f,\n"
+        "  \"persistent_windows\": %d,\n"
+        "  \"contention_detected\": %s,\n"
+        "  \"priority_adjustment_applied\": %s,\n"
+        "  \"adjusted_workers\": %d,\n"
+        "  \"recovery_verified\": %s,\n"
+        "  \"interrupted\": %s,\n"
+        "  \"improvement_percent\": %.3f,\n"
+        "  \"probe_scheduler_wait_ns\": %llu,\n",
+        cpu,
+        count,
+        probe,
+        contributor,
+        contributor_cpu,
+        threshold,
+        max_streak,
+        detected ? "true" : "false",
+        applied ? "true" : "false",
+        adjusted,
+        verified ? "true" : "false",
+        interrupted ? "true" : "false",
+        improvement,
+        probe_info.wait_ns
+    );
+
+    fprintf(
+        out,
+        "  \"intervention_monotonic_ns\": %lld,\n"
+        "  \"workload_evidence\": [\n",
+        static_cast<long long>(intervention_ns)
+    );
+
+    for (int i = 0; i < count; i++) {
+        fprintf(
+            out,
+            "    {\"pid\": %d, \"state_before\": \"%c\", "
+            "\"nice_before\": %d, \"nice_after\": %d, "
+            "\"cpu_ticks_before\": %llu, "
+            "\"cpu_ticks_after\": %llu}%s\n",
+            workers[i],
+            worker_before[i].state ? worker_before[i].state : '?',
+            worker_before[i].nice,
+            worker_after[i].nice,
+            worker_before[i].ticks,
+            worker_after[i].ticks,
+            i + 1 < count ? "," : ""
+        );
+    }
+
     fprintf(out, "  ],\n");
+
     json_stats(out, "baseline", baseline.stats, true);
     json_stats(out, "before", before.stats, true);
     json_stats(out, "after", after.stats, false);
+
     fprintf(out, "}\n");
+
     bool io_error = ferror(csv) || ferror(out);
+
     if (fclose(csv))
         io_error = true;
+
     if (fclose(out))
         io_error = true;
+
     cleanup();
-    printf("\n%s\nBefore %.3f ms -> after %.3f ms (%.1f%% mean improvement)\nReports: %s, %s\n",
-           verified      ? "RECOVERY VERIFIED"
-           : interrupted ? "INTERRUPTED"
-                         : "RECOVERY NOT VERIFIED",
-           before.stats.mean, after.stats.mean, improvement, report, csv_path);
+
+    const char *result;
+
+    if (interrupted)
+        result = "INTERRUPTED";
+    else if (verified)
+        result = "RECOVERY VERIFIED";
+    else
+        result = "RECOVERY NOT VERIFIED";
+
+    printf(
+        "\n%s\n"
+        "Before %.3f ms -> after %.3f ms "
+        "(%.1f%% mean improvement)\n"
+        "Reports: %s, %s\n",
+        result,
+        before.stats.mean,
+        after.stats.mean,
+        improvement,
+        report,
+        csv_path
+    );
+
     if (io_error) {
-        fprintf(stderr, "Failed writing report\n");
+        fprintf(stderr, "Failed writing report.\n");
         return 1;
     }
+
     return interrupted ? 130 : 0;
 }
