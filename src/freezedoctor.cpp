@@ -22,12 +22,12 @@
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-
+using namespace std;
 constexpr int MAX_WORKERS = 16;
 constexpr unsigned CAPACITY = 131072;
-constexpr std::int64_t SAMPLE_NS = 500000000LL;
-constexpr std::int64_t PERIOD_NS = 10000000LL;
-constexpr std::int64_t SERVICE_NS = 2000000LL;
+constexpr int64_t SAMPLE_NS = 500000000LL;
+constexpr int64_t PERIOD_NS = 10000000LL;
+constexpr int64_t SERVICE_NS = 2000000LL;
 
 struct Measurement {
     double response_ms{}, wake_ms{};
